@@ -1,6 +1,6 @@
 {
   "name": "wps-sdk-wrapper",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Framework-agnostic WPS WebOffice SDK wrapper with utilities for React, Vue, and vanilla JavaScript / 框架无关的WPS WebOffice SDK封装库，支持React、Vue和原生JavaScript",
   "license": "MIT",
   "author": "amorywoo",
