@@ -6,11 +6,11 @@
   "author": "amorywoo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/amorywoo/wps-sdk-wrapper.git"
+    "url": "git+https://github.com/xordion/wps-sdk-wrapper.git"
   },
-  "homepage": "https://github.com/amorywoo/wps-sdk-wrapper#readme",
+  "homepage": "https://github.com/xordion/wps-sdk-wrapper#readme",
   "bugs": {
-    "url": "https://github.com/amorywoo/wps-sdk-wrapper/issues"
+    "url": "https://github.com/xordion/wps-sdk-wrapper/issues"
   },
   "keywords": [
     "wps",
