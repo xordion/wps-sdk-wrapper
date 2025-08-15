@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import  {
+import {
   clearHitHighlight,
   searchAndLocateText,
   insertTextAtCursor,
@@ -14,6 +14,8 @@ import './App.css';
 function App() {
   const [fileId, setFileId] = useState('92');
   const [appId, setAppId] = useState('');
+  const [token, setToken] = useState('');
+  const [showToken, setShowToken] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('模拟文档');
@@ -141,7 +143,7 @@ function App() {
   const clearLogs = () => {
     setLogs([]);
   };
-  
+
   const resetWPS = (container: HTMLElement) => {
     if (container) {
       container.innerHTML = '';
@@ -150,10 +152,13 @@ function App() {
     wpsRef.current = null;
     appRef.current = null;
   };
-  
+
   const openWps = async () => {
     // 使用initWPS工具方法替换重复逻辑
     try {
+      const finalToken = token || undefined;
+      addLog(`开始初始化WPS... ${finalToken ? '(使用自定义Token)' : '(使用默认Token策略)'}`);
+
       await initWPS({
         fileId,
         appId,
@@ -161,6 +166,7 @@ function App() {
         onReady: handleReady,
         isReadOnly,
         simple: true,
+        token: finalToken, // 只有当token有值时才传递
         customArgs: {
           hidecmb: true,
           sdkId: 1,
@@ -178,14 +184,14 @@ function App() {
   const handleConfigSave = async () => {
     try {
       addLog('开始重新配置WPS...');
-      
+
       // 1. 重置当前WPS实例
       const container = document.querySelector(".wps-container") as HTMLElement;
       resetWPS(container);
-      
+
       // 2. 重新初始化WPS
       await openWps();
-      
+
       addLog('配置保存成功，WPS已重新初始化');
     } catch (error: any) {
       addLog(`配置保存失败: ${error.message}`);
@@ -193,13 +199,16 @@ function App() {
     }
   };
   useEffect(() => {
+    // openWps();
+  }, [token]);
+  useEffect(() => {
     // 清理容器中的所有内容，避免重复插入
     const container = document.querySelector(".wps-container");
     if (container) {
       container.innerHTML = '';
     }
-    
-    openWps();
+    setAppId(localStorage.getItem('appId') || '');
+    setToken(localStorage.getItem('token') || '');
 
     // 清理函数，在组件卸载或重新挂载时执行
     return () => {
@@ -232,9 +241,46 @@ function App() {
                 <input
                   type="text"
                   value={appId}
-                  onChange={(e) => setAppId(e.target.value)}
+                  onChange={(e) => {
+                    localStorage.setItem('appId', e.target.value);
+                    setAppId(e.target.value)
+                  }}
                   placeholder="请输入应用ID"
                 />
+              </div>
+              <div className="form-group">
+                <label>访问令牌 (Token):</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type={showToken ? "text" : "password"}
+                    value={token}
+                    onChange={(e) => {
+                      localStorage.setItem('token', e.target.value);
+                      setToken(e.target.value)
+                    }}
+                    placeholder="请输入访问令牌 （必填）"
+                    style={{ paddingRight: '40px', flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#666'
+                    }}
+                    title={showToken ? "隐藏令牌" : "显示令牌"}
+                  >
+                    {showToken ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                <small style={{ color: '#666', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  💡 用于访问需要认证的WPS文档，如保存后不生效，刷新页面即可
+                </small>
               </div>
               <div className="form-group">
                 <label className="checkbox-label">
@@ -247,7 +293,7 @@ function App() {
                 </label>
               </div>
               <div className="form-actions">
-                <button 
+                <button
                   className="save-config-btn"
                   onClick={handleConfigSave}
                   disabled={loading}
@@ -291,8 +337,8 @@ function App() {
 
             <div className="tool-group">
               <h4>字体设置</h4>
-              <select 
-                value={selectedFont} 
+              <select
+                value={selectedFont}
                 onChange={(e) => setSelectedFont(e.target.value)}
                 className="font-select"
               >

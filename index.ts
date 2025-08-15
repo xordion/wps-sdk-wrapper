@@ -97,6 +97,7 @@ const initWPS = async ({
     const wps: ISubscriptionsConf = WebOfficeSDK.init(options);
     if (wps) {
       await wps?.ready();
+      console.log(wps, 'wps');
       const app = (await wps?.Application) as any;
       await app.ActiveDocument?.SetReadOnly(isReadOnly);
       if (onReady) {
