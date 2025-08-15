@@ -13,15 +13,16 @@ import './App.css';
 
 function App() {
   const [fileId, setFileId] = useState('92');
-  const [appId, setAppId] = useState('');
-  const [token, setToken] = useState('');
-  const [showToken, setShowToken] = useState(false);
+  const [appId, setAppId] = useState(localStorage.getItem('appId') || '');
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('模拟文档');
   const [insertText, setInsertText] = useState('这是插入的文本');
   const [selectedFont, setSelectedFont] = useState('楷体');
   const [logs, setLogs] = useState<string[]>([]);
+  const [showToken, setShowToken] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+
 
   const wpsRef = useRef<any>(null);
   const appRef = useRef<any>(null);
@@ -156,9 +157,6 @@ function App() {
   const openWps = async () => {
     // 使用initWPS工具方法替换重复逻辑
     try {
-      const finalToken = token || undefined;
-      addLog(`开始初始化WPS... ${finalToken ? '(使用自定义Token)' : '(使用默认Token策略)'}`);
-
       await initWPS({
         fileId,
         appId,
@@ -166,13 +164,13 @@ function App() {
         onReady: handleReady,
         isReadOnly,
         simple: true,
-        token: finalToken, // 只有当token有值时才传递
-        customArgs: {
-          hidecmb: true,
-          sdkId: 1,
-          _w_tokentype: 1,
-          _w_appid: appId,
-        }
+        token,
+        // customArgs: {
+        //   hidecmb: true,
+        //   sdkId: 1,
+        //   _w_tokentype: 1,
+        //   _w_appid: appId,
+        // }
       });
     } catch (error) {
       handleError(error);
@@ -199,16 +197,13 @@ function App() {
     }
   };
   useEffect(() => {
-    // openWps();
-  }, [token]);
-  useEffect(() => {
     // 清理容器中的所有内容，避免重复插入
     const container = document.querySelector(".wps-container");
     if (container) {
       container.innerHTML = '';
     }
-    setAppId(localStorage.getItem('appId') || '');
-    setToken(localStorage.getItem('token') || '');
+
+    openWps();
 
     // 清理函数，在组件卸载或重新挂载时执行
     return () => {
@@ -383,10 +378,10 @@ function App() {
         <div className="right-panel">
           <div className="wps-section">
             <h3>📄 WPS 预览区域</h3>
-            <div className="wps-container">
-
-            </div>
+            <div className="wps-container"></div>
           </div>
+
+
         </div>
       </div>
     </div>
