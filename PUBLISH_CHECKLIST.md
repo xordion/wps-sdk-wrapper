@@ -1,6 +1,46 @@
 # NPM 发布检查清单 / NPM Publishing Checklist
 
-## 发布前检查 / Pre-publish Checklist
+## 🛠️ 本地开发
+
+### .npmrc 配置
+
+```bash
+# 发布
+registry=https://nexus.qtech.cn/repository/npm-hosted/
+
+# 本地安装运行
+registry=https://nexus.qtech.cn/repository/npm-grouped/
+```
+
+### 启动开发服务器
+
+```bash
+# 安装依赖
+npm install
+
+# 启动示例项目进行开发调试
+npm run dev
+```
+
+示例项目会在 http://localhost:5173 启动，提供完整的组件调试界面。
+
+### 构建组件库
+
+```bash
+# 构建生产版本
+npm run build
+
+# 清理构建文件
+npm run clean
+```
+
+### 预览示例项目
+
+```bash
+npm run preview
+```
+
+## 📦 发布前检查 / Pre-publish Checklist
 
 ### 1. 版本管理 / Version Management
 - [ ] 确认版本号符合语义化版本规范 (semver)
@@ -41,15 +81,14 @@ npm run dev  # 测试示例项目
   - [x] files 字段包含必要文件
   - [x] repository, homepage, bugs 链接
   - [x] keywords 关键词
-- [x] .npmignore 正确配置
-- [x] peerDependencies 依赖声明
+- [x] .npmignore 正确配置（或使用 files 字段）
 
 ### 5. 构建产物 / Build Artifacts
 - [ ] dist/ 目录包含以下文件:
   - [ ] index.js (ESM 格式)
   - [ ] index.cjs (CommonJS 格式)
   - [ ] index.d.ts (TypeScript 声明)
-  - [ ] sourcemap 文件
+  - [ ] index.d.mts (TypeScript ESM 声明)
 
 ```bash
 npm run clean
@@ -138,4 +177,55 @@ npm unpublish wps-sdk-wrapper@version
 
 # 或者标记为废弃
 npm deprecate wps-sdk-wrapper@version "This version has been deprecated"
+```
+
+## 🔧 维护指南
+
+### 添加新的工具方法
+
+1. 在相应的模块文件中实现新方法（如 `src/components/WpsViewer/modules/xxx.ts`）
+2. 在模块文件中导出新方法
+3. 在 `src/components/WpsViewer/index.ts` 中确保模块被重新导出
+4. 在项目根目录的 `index.ts` 中添加导出
+5. 在示例项目中添加测试用例（`src/App.tsx`）
+6. 更新 README 文档
+
+### 模块依赖原则
+
+- `common.ts` - 基础模块，不依赖其他模块
+- 其他模块只依赖 `common.ts` 和同级模块
+- 避免循环依赖，保持清晰的依赖关系
+
+### 代码风格
+
+- 使用 TypeScript 严格模式
+- 函数名采用驼峰命名
+- 导出使用 named export
+- 添加完整的类型注解和 JSDoc 注释
+
+### 项目结构说明
+
+```
+wps-sdk-wrapper/
+├── index.ts                    # 统一导出文件（npm 包入口）
+├── src/
+│   ├── components/             # 组件目录
+│   │   └── WpsViewer/          # WPS 查看器模块
+│   │       ├── index.ts        # 模块聚合导出
+│   │       ├── modules/        # 功能模块目录
+│   │       │   ├── common.ts   # 公共类型和工具
+│   │       │   ├── core.ts     # WPS 核心功能
+│   │       │   ├── highlight.ts # 高亮和颜色操作
+│   │       │   ├── search.ts   # 搜索和定位
+│   │       │   ├── text.ts     # 文本操作
+│   │       │   ├── revisions.ts # 修订管理
+│   │       │   ├── formatting.ts # 格式化操作
+│   │       │   └── utils.ts    # 工具函数
+│   │       └── sdk/            # WPS SDK 文件（v2.0.6）
+│   ├── utils/                  # 通用工具
+│   └── interface.ts            # 类型定义
+├── package.json
+├── tsconfig.json
+├── tsup.config.ts
+└── README.md
 ```

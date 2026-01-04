@@ -7,8 +7,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // 将 wps-sdk-wrapper 指向根目录的源码，方便开发调试
-      'wps-sdk-wrapper': resolve(__dirname, './index.ts'),
+      // 将 wps-component 指向根目录的源码，方便开发调试
+      '@': resolve(__dirname, './src'),
+      'wps-component': resolve(__dirname, './index.ts'),
     },
   },
   server: {
