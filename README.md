@@ -1,505 +1,372 @@
 # WPS SDK Wrapper
 
-A **framework-agnostic** utility toolkit for WPS WebOffice SDK integration. Works seamlessly with React, Vue, Angular, or vanilla JavaScript.
+一个框架无关的 WPS WebOffice SDK 封装库，配合wps前端应用，提供完整的 WPS weboffice 文档编辑、修订管理和文本操作功能。可在 React、Vue、Angular 或原生 JavaScript 等任何技术栈中使用。
 
-一个**框架无关**的 WPS WebOffice SDK 工具库。可与 React、Vue、Angular 或原生 JavaScript 无缝配合使用。
+## ✨ 特性
 
-## ✨ Features / 特性
+- 🎯 **完整的 WPS 集成** - 基于 WPS WebOffice SDK v2.0.6，SDK 已内置打包
+- 🔧 **框架无关** - 纯 JavaScript/TypeScript 实现，支持所有技术栈
+- 🔧 **模块化设计** - 按功能拆分模块，支持按需导入
+- 🎨 **修订着色** - 实时为修订内容添加颜色标记
+- 📝 **文档操作** - 搜索、定位、替换、插入等完整功能
+- 🛡️ **类型安全** - 完整的 TypeScript 类型定义
+- ⚡ **零循环依赖** - 优化的模块依赖结构
 
-- 🚀 **Framework Agnostic** - Works with any JavaScript framework or vanilla JS / **框架无关** - 可与任何 JavaScript 框架或原生 JS 配合使用
-- 🛠️ **Rich Utilities** - Comprehensive toolkit for document operations / **丰富工具** - 提供全面的文档操作工具集
-- 📝 **TypeScript Support** - Full TypeScript definitions included / **TypeScript 支持** - 包含完整的 TypeScript 类型定义
-- 🎯 **Modern Development** - Built with modern JavaScript patterns / **现代开发** - 使用现代 JavaScript 模式构建
-- 📦 **Tree Shaking** - Supports tree shaking for optimal bundle size / **Tree Shaking** - 支持 tree shaking，优化打包体积
-- 🔧 **Zero Dependencies** - Core library has no framework dependencies / **零依赖** - 核心库无框架依赖
-
-## 📦 Installation / 安装
+## 📦 安装
 
 ```bash
 npm install wps-sdk-wrapper
 ```
 
-## 🛠️ Available Utilities / 可用工具方法
+## 🔑 获取认证信息
 
-### Initialization / 初始化相关
-- `initWPS` - Initialize WPS instance / 初始化 WPS 实例
-- `getWPSApplication` - Get WPS application instance / 获取 WPS 应用程序实例
-- `setDocumentReadOnly` - Set document read-only status / 设置文档只读状态
+在使用本库之前，您需要已经获取以下认证信息：
 
-### Text Operations / 文本操作
-- `searchAndLocateText` - Search and locate text in document / 搜索并定位文档中的文本
-- `insertTextAtCursor` - Insert text at cursor position / 在光标位置插入文本
-- `clearHitHighlight` - Clear text highlighting / 清除文本高亮
-- `replaceOriginalContent` - Replace original content / 替换原始内容
+- **appId** - 应用ID，由 **WPS weboffice控制台** 分配
+- **fileId** - 文件ID
+- **token** - 访问令牌，由接入方自定义, WebOffice 将会在回调接口时通过 X-Weboffice-Token 的 Header 字段回传，可用于检查鉴权
 
-### Document Management / 文档管理
-- `saveDocument` - Save document / 保存文档
-- `getDocLength` - Get document length / 获取文档长度
-- `formatDocumentFont` - Format document font / 格式化文档字体
+> 💡 **提示**：这些认证信息是访问WPS文档服务的必需参数，请联系WPS中台管理员获取。
 
-### Revision Management / 修订管理
-- `getLatestRevisionDate` - Get latest revision date / 获取最新修订日期
-- `collectRevisionInfos` - Collect revision information / 收集修订信息
-- `handleMatchingRevisions` - Accept/reject matching revisions / 接受/拒绝匹配的修订
-- `handleRevisionContent` - Handle revision content / 处理修订内容
+## 🚀 使用方式
 
-## 📚 API Reference / API 参考
-
-### initWPS Options
-
-```typescript
-interface InitWPSOptions {
-  fileId: string;                    // 文件ID
-  appId: string;                     // 应用ID
-  containerSelector: string;         // 容器选择器
-  onReady?: (wps: any, app: any) => void;     // 初始化完成回调
-  onError?: (error: any) => void;             // 错误回调
-  isReadOnly: boolean;               // 是否只读
-  token?: string;                    // 访问令牌
-  simple?: boolean;                  // 简单模式
-  refreshToken?: (token: string, timeout?: number) => void;  // 刷新令牌函数
-  [key: string]: any;               // 其他自定义参数
-}
-```
-
-### Basic Usage / 基本用法
+### 导入工具方法
 
 ```javascript
-import { initWPS, searchAndLocateText, insertTextAtCursor } from 'wps-sdk-wrapper';
+// ES Module 方式
+import { 
+  initWPS, 
+  saveDocument, 
+  getWPSApplication,
+  searchAndLocateText,
+  insertTextAtCursor,
+  coloredOnChange
+} from 'wps-sdk-wrapper';
 
-// Initialize WPS / 初始化 WPS
-const wpsInstance = await initWPS({
-  fileId: "your-file-id",
-  appId: "your-app-id",
-  containerSelector: ".wps-container",
-  onReady: (wps, app) => {
-    console.log('WPS initialized / WPS 初始化成功', wps, app);
-  },
-  isReadOnly: false
-});
+// CommonJS 方式
+const { initWPS, saveDocument } = require('wps-sdk-wrapper');
 ```
 
-## 📄 License / 许可证
+### 基本用法（原生 JavaScript）
 
-MIT License - see [LICENSE](LICENSE) file for details.
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WPS SDK Wrapper 示例</title>
+</head>
+<body>
+  <div id="wps-container" style="width: 100%; height: 600px;"></div>
+  <button id="save-btn">保存文档</button>
 
-MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+  <script type="module">
+    import { initWPS, saveDocument, coloredOnChange } from 'wps-sdk-wrapper';
 
----
+    let wpsInstance = null;
+    let appInstance = null;
+    let clearListener = null;
 
-## 🚀 Framework Examples / 框架示例
+    // 从WPS中台获取的认证信息
+    const appId = 'your-app-id';      // 由WPS中台提供
+    const fileId = 'your-file-id';    // 由WPS中台提供
+    const token = 'your-token';       // 由WPS中台提供
 
-### Vanilla JavaScript / 原生 JavaScript
+    const handleReady = (wps, app) => {
+      wpsInstance = wps;
+      appInstance = app;
+      
+      // 启用修订内容着色
+      clearListener = coloredOnChange(wps, '#ff0000');
+      console.log('WPS 初始化完成');
+    };
 
-```javascript
-import { initWPS, searchAndLocateText, insertTextAtCursor } from 'wps-sdk-wrapper';
+    const handleError = (error) => {
+      console.error('WPS 初始化失败', error);
+    };
 
-// Initialize WPS
-const wpsInstance = await initWPS({
-  fileId: "your-file-id",
-  appId: "your-app-id",
-  containerSelector: ".wps-container",
-  onReady: (wps, app) => {
-    console.log('WPS initialized successfully', wps, app);
-    window.wpsApp = app; // Store for later use
-  },
-  onError: (error) => {
-    console.error('WPS initialization failed', error);
-  },
-  isReadOnly: false
-});
+    // 初始化WPS
+    (async () => {
+      try {
+        const result = await initWPS({
+          fileId: fileId,
+          appId: appId,
+          fileName: 'example.doc',
+          containerSelector: '#wps-container',
+          token: token,
+          isReadOnly: false,
+          onReady: handleReady,
+          onError: handleError
+        });
+        
+        if (result) {
+          console.log('WPS 初始化成功', result);
+        }
+      } catch (error) {
+        console.error('初始化失败:', error);
+      }
+    })();
 
-// Use utilities
-async function searchText() {
-  const result = await searchAndLocateText(window.wpsApp, 'search text', true);
-  if (result) {
-    console.log('Text found at position:', result.pos);
-  }
-}
+    // 保存文档
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      if (wpsInstance) {
+        await saveDocument(wpsInstance);
+        console.log('文档保存成功');
+      }
+    });
 
-async function insertText() {
-  await insertTextAtCursor(window.wpsApp, 'Hello from vanilla JS!');
-}
+    // 清理（页面卸载时）
+    window.addEventListener('beforeunload', () => {
+      if (clearListener) {
+        clearListener();
+      }
+    });
+  </script>
+</body>
+</html>
 ```
 
-### React Integration / React 集成
+### React 使用示例
 
 ```jsx
-import React, { useEffect, useRef, useState } from 'react';
-import { initWPS, searchAndLocateText, insertTextAtCursor, saveDocument } from 'wps-sdk-wrapper';
+import { useEffect, useRef } from 'react';
+import { initWPS, coloredOnChange, saveDocument } from 'wps-sdk-wrapper';
 
-function WPSComponent() {
-  const [app, setApp] = useState(null);
-  const containerRef = useRef(null);
+function WpsEditor() {
+  const wpsRef = useRef(null);
+  const appRef = useRef(null);
+  const clearListenerRef = useRef(null);
 
   useEffect(() => {
+    // 从WPS中台获取的认证信息
+    const appId = 'your-app-id';      // 由WPS中台提供
+    const fileId = 'your-file-id';    // 由WPS中台提供
+    const token = 'your-token';       // 由WPS中台提供
+
     const initializeWPS = async () => {
       try {
         const result = await initWPS({
-          fileId: "your-file-id",
-          appId: "your-app-id",
-          containerSelector: ".wps-container",
+          fileId: fileId,
+          appId: appId,
+          fileName: 'example.doc',
+          containerSelector: '#wps-container',
+          token: token,
+          isReadOnly: false,
           onReady: (wps, app) => {
-            setApp(app);
-            console.log('WPS ready in React');
+            wpsRef.current = wps;
+            appRef.current = app;
+            clearListenerRef.current = coloredOnChange(wps);
           },
           onError: (error) => {
-            console.error('WPS error:', error);
-          },
-          isReadOnly: false
+            console.error('WPS 初始化失败', error);
+          }
         });
       } catch (error) {
-        console.error('Failed to initialize WPS:', error);
+        console.error('初始化失败:', error);
       }
     };
 
     initializeWPS();
+
+    return () => {
+      if (clearListenerRef.current) {
+        clearListenerRef.current();
+      }
+    };
   }, []);
 
-  const handleSearch = async () => {
-    if (!app) return;
-    const result = await searchAndLocateText(app, 'React', true);
-    console.log('Search result:', result);
-  };
-
-  const handleInsert = async () => {
-    if (!app) return;
-    await insertTextAtCursor(app, 'Text from React component!');
-  };
-
-  const handleSave = async () => {
-    if (!app) return;
-    await saveDocument(app);
-  };
-
-  return (
-    <div>
-      <div className="controls">
-        <button onClick={handleSearch}>Search Text</button>
-        <button onClick={handleInsert}>Insert Text</button>
-        <button onClick={handleSave}>Save Document</button>
-      </div>
-      <div 
-        className="wps-container" 
-        ref={containerRef}
-        style={{ width: '100%', height: '600px' }}
-      />
-    </div>
-  );
+  return <div id="wps-container" style={{ width: '100%', height: '600px' }}></div>;
 }
-
-export default WPSComponent;
 ```
 
-### Vue.js Integration / Vue.js 集成
+### Vue 使用示例
 
 ```vue
 <template>
-  <div>
-    <div class="controls">
-      <button @click="searchText">Search Text</button>
-      <button @click="insertText">Insert Text</button>
-      <button @click="saveDoc">Save Document</button>
-    </div>
-    <div 
-      class="wps-container" 
-      ref="wpsContainer"
-      style="width: 100%; height: 600px;"
-    />
-  </div>
-</template>
-
-<script>
-import { initWPS, searchAndLocateText, insertTextAtCursor, saveDocument } from 'wps-sdk-wrapper';
-
-export default {
-  name: 'WPSComponent',
-  data() {
-    return {
-      wpsApp: null,
-      wpsInstance: null
-    };
-  },
-  async mounted() {
-    try {
-      await this.initializeWPS();
-    } catch (error) {
-      console.error('Failed to initialize WPS:', error);
-    }
-  },
-  methods: {
-    async initializeWPS() {
-      const result = await initWPS({
-        fileId: "your-file-id",
-        appId: "your-app-id",
-        containerSelector: ".wps-container",
-        onReady: (wps, app) => {
-          this.wpsInstance = wps;
-          this.wpsApp = app;
-          console.log('WPS ready in Vue');
-        },
-        onError: (error) => {
-          console.error('WPS error:', error);
-        },
-        isReadOnly: false
-      });
-    },
-    async searchText() {
-      if (!this.wpsApp) return;
-      const result = await searchAndLocateText(this.wpsApp, 'Vue', true);
-      console.log('Search result:', result);
-    },
-    async insertText() {
-      if (!this.wpsApp) return;
-      await insertTextAtCursor(this.wpsApp, 'Text from Vue component!');
-    },
-    async saveDoc() {
-      if (!this.wpsInstance) return;
-      await saveDocument(this.wpsInstance);
-    }
-  },
-  beforeUnmount() {
-    // Cleanup if needed
-    if (this.wpsInstance) {
-      // Add any cleanup logic here
-    }
-  }
-};
-</script>
-```
-
-### Vue 3 Composition API / Vue 3 组合式 API
-
-```vue
-<template>
-  <div>
-    <div class="controls">
-      <button @click="searchText">Search Text</button>
-      <button @click="insertText">Insert Text</button>
-      <button @click="saveDoc">Save Document</button>
-    </div>
-    <div 
-      class="wps-container" 
-      ref="wpsContainer"
-      style="width: 100%; height: 600px;"
-    />
-  </div>
+  <div id="wps-container" style="width: 100%; height: 600px;"></div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { initWPS, searchAndLocateText, insertTextAtCursor, saveDocument } from 'wps-sdk-wrapper';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { initWPS, coloredOnChange } from 'wps-sdk-wrapper';
 
-const wpsContainer = ref(null);
-const wpsApp = ref(null);
-const wpsInstance = ref(null);
+const wpsRef = ref(null);
+const clearListenerRef = ref(null);
 
 onMounted(async () => {
+  // 从WPS中台获取的认证信息
+  const appId = 'your-app-id';      // 由WPS中台提供
+  const fileId = 'your-file-id';    // 由WPS中台提供
+  const token = 'your-token';       // 由WPS中台提供
+
   try {
-    await initializeWPS();
+    const result = await initWPS({
+      fileId: fileId,
+      appId: appId,
+      fileName: 'example.doc',
+      containerSelector: '#wps-container',
+      token: token,
+      isReadOnly: false,
+      onReady: (wps, app) => {
+        wpsRef.value = wps;
+        clearListenerRef.value = coloredOnChange(wps);
+      },
+      onError: (error) => {
+        console.error('WPS 初始化失败', error);
+      }
+    });
   } catch (error) {
-    console.error('Failed to initialize WPS:', error);
+    console.error('初始化失败:', error);
   }
 });
 
-const initializeWPS = async () => {
-  const result = await initWPS({
-    fileId: "your-file-id",
-    appId: "your-app-id",
-    containerSelector: ".wps-container",
-    onReady: (wps, app) => {
-      wpsInstance.value = wps;
-      wpsApp.value = app;
-      console.log('WPS ready in Vue 3');
-    },
-    onError: (error) => {
-      console.error('WPS error:', error);
-    },
-    isReadOnly: false
-  });
-};
-
-const searchText = async () => {
-  if (!wpsApp.value) return;
-  const result = await searchAndLocateText(wpsApp.value, 'Vue 3', true);
-  console.log('Search result:', result);
-};
-
-const insertText = async () => {
-  if (!wpsApp.value) return;
-  await insertTextAtCursor(wpsApp.value, 'Text from Vue 3 Composition API!');
-};
-
-const saveDoc = async () => {
-  if (!wpsInstance.value) return;
-  await saveDocument(wpsInstance.value);
-};
-
 onUnmounted(() => {
-  // Cleanup if needed
+  if (clearListenerRef.value) {
+    clearListenerRef.value();
+  }
 });
 </script>
 ```
 
-### Angular Integration / Angular 集成
+## 📋 可用的工具方法
 
-```typescript
-// wps.service.ts
-import { Injectable } from '@angular/core';
-import { initWPS, searchAndLocateText, insertTextAtCursor, saveDocument } from 'wps-sdk-wrapper';
+### 🔧 核心功能 (core.ts)
 
-@Injectable({
-  providedIn: 'root'
-})
-export class WPSService {
-  private wpsApp: any = null;
-  private wpsInstance: any = null;
+- `initWPS(options)` - 初始化 WPS 实例
+- `saveDocument(wps)` - 保存文档
+- `getWPSApplication(wps)` - 获取 WPS 应用程序实例
+- `setDocumentReadOnly(wps, isReadOnly)` - 设置文档只读状态
 
-  async initializeWPS(config: any): Promise<void> {
-    try {
-      await initWPS({
-        ...config,
-        onReady: (wps: any, app: any) => {
-          this.wpsInstance = wps;
-          this.wpsApp = app;
-          console.log('WPS ready in Angular');
-        },
-        onError: (error: any) => {
-          console.error('WPS error:', error);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to initialize WPS:', error);
-      throw error;
-    }
-  }
+### 🎨 高亮和颜色操作 (highlight.ts)
 
-  async searchText(text: string): Promise<any> {
-    if (!this.wpsApp) return null;
-    return await searchAndLocateText(this.wpsApp, text, true);
-  }
+- `clearHitHighlight(app)` - 清除文本高亮
+- `highlightText(app, pos, length)` - 高亮指定位置文本
+- `highlightByRange(app, pos, length)` - 按范围高亮文本
+- `coloredOnChange(wps, color?)` - 启用修订内容着色监听 ⭐
+- `coloringTextByRange(app, {start, end}, color?)` - 为指定范围文本着色
+- `setInputColor(app, color)` - 设置输入文本颜色
 
-  async insertText(text: string): Promise<void> {
-    if (!this.wpsApp) return;
-    await insertTextAtCursor(this.wpsApp, text);
-  }
+### 🔍 搜索和定位 (search.ts)
 
-  async saveDocument(): Promise<void> {
-    if (!this.wpsInstance) return;
-    await saveDocument(this.wpsInstance);
-  }
+- `searchAndLocateText(app, content, isLocate?)` - 搜索并定位文本
 
-  getApp(): any {
-    return this.wpsApp;
-  }
+### ✏️ 文本操作 (text.ts)
+
+- `insertTextAtCursor(app, text)` - 在光标位置插入文本
+- `replaceOriginalContent(app, origin, replace, pos, len, isHighlight?)` - 替换原文内容
+
+### 📝 修订管理 (revisions.ts)
+
+- `getLatestRevisionDate(app)` - 获取最新修订时间
+- `collectRevisionInfos(revisions)` - 收集修订信息
+- `getRevisionByDate(app, date)` - 根据日期获取修订信息
+- `handleMatchingRevisions(revisions, type)` - 批量处理修订（接受/拒绝）
+- `handleRevisionContent(app, date, isReject?)` - 处理修订内容
+
+### 🎯 格式化操作 (formatting.ts)
+
+- `getDocLength(app)` - 获取文档字数
+- `formatDocumentFont(app, font)` - 格式化文档字体
+
+### 🛠️ 工具函数 (utils.ts)
+
+- `generateRandomString(length, includeUpperCase?, includeLowerCase?)` - 生成随机字符串
+
+### 📊 公共类型 (common.ts)
+
+- `RevisionInfo` - 修订信息接口
+- `delay(ms)` - 延迟执行工具函数
+
+## 🌟 功能示例
+
+### 修订内容实时着色
+
+```javascript
+import { coloredOnChange } from 'wps-sdk-wrapper';
+
+// 在 WPS 初始化完成后启用
+const clearListener = coloredOnChange(wps, '#ff0000'); // 可选择颜色，默认蓝色
+
+// 功能：
+// 1. 监听文档变化，自动为最新修订内容着色
+// 2. 设置输入文本的默认颜色
+// 3. 返回清理函数，用于取消监听
+
+// 清理监听器
+clearListener();
+```
+
+### 文本搜索和定位
+
+```javascript
+import { searchAndLocateText } from 'wps-sdk-wrapper';
+
+// 搜索文本并定位到第一个匹配位置
+const result = await searchAndLocateText(app, '要搜索的文本', true);
+if (result) {
+  console.log(`找到文本，位置: ${result.pos}，长度: ${result.len}，共 ${result.totalMatches} 处匹配`);
 }
 ```
 
-```typescript
-// wps.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { WPSService } from './wps.service';
+### 在光标处插入文本
 
-@Component({
-  selector: 'app-wps',
-  template: `
-    <div>
-      <div class="controls">
-        <button (click)="searchText()">Search Text</button>
-        <button (click)="insertText()">Insert Text</button>
-        <button (click)="saveDoc()">Save Document</button>
-      </div>
-      <div 
-        class="wps-container" 
-        style="width: 100%; height: 600px;">
-      </div>
-    </div>
-  `
-})
-export class WPSComponent implements OnInit, OnDestroy {
+```javascript
+import { insertTextAtCursor } from 'wps-sdk-wrapper';
 
-  constructor(private wpsService: WPSService) {}
-
-  async ngOnInit() {
-    try {
-      await this.wpsService.initializeWPS({
-        fileId: "your-file-id",
-        appId: "your-app-id",
-        containerSelector: ".wps-container",
-        isReadOnly: false
-      });
-    } catch (error) {
-      console.error('Failed to initialize WPS:', error);
-    }
-  }
-
-  async searchText() {
-    const result = await this.wpsService.searchText('Angular');
-    console.log('Search result:', result);
-  }
-
-  async insertText() {
-    await this.wpsService.insertText('Text from Angular component!');
-  }
-
-  async saveDoc() {
-    await this.wpsService.saveDocument();
-  }
-
-  ngOnDestroy() {
-    // Cleanup if needed
-  }
+// 在文档光标当前位置插入文本
+const success = await insertTextAtCursor(app, '要插入的文本');
+if (success) {
+  console.log('文本插入成功');
 }
 ```
 
-## 🔧 Development / 开发
+### 文本替换并高亮
 
-```bash
-# Install dependencies / 安装依赖
-npm install
+```javascript
+import { replaceOriginalContent } from 'wps-sdk-wrapper';
 
-# Start development server (React example) / 启动开发服务器（React示例）
-npm run dev
-
-# Build library / 构建库
-npm run build
-
-# Build example / 构建示例
-npm run build:example
+// 替换文本并可选择是否高亮
+await replaceOriginalContent(
+  app,           // WPS 应用实例
+  '原文内容',     // 要替换的原文
+  '新文内容',     // 替换后的文本
+  startPos,      // 开始位置
+  length,        // 长度
+  true          // 是否高亮新文本
+);
 ```
 
-## 💡 Design Advantages / 设计优势
+## 💡 设计优势
 
-1. **Framework Agnostic** - Core code has no specific framework dependencies / **框架无关** - 核心代码不依赖任何特定框架
-2. **Flexible Integration** - Easy integration into any modern frontend framework / **灵活集成** - 可轻松集成到任何现代前端框架中
-3. **Type Safe** - Full TypeScript support / **类型安全** - 完整的 TypeScript 支持
-4. **Tree Shaking** - Supports on-demand imports / **按需导入** - 支持按需导入，减少打包体积
-5. **Easy Extension** - New features can be easily added / **易于扩展** - 新增功能只需添加到工具集并导出
+1. **🌐 框架无关** - 纯 JavaScript/TypeScript 实现，可在任何技术栈中使用
+2. **📦 SDK 内置** - WPS SDK v2.0.6 已打包，无需额外配置
+3. **🏗️ 模块化架构** - 按功能拆分，避免循环依赖
+4. **📦 按需导入** - 支持按需导入，减少打包体积
+5. **🔒 类型安全** - 完整的 TypeScript 类型定义
+6. **⚡ 性能优化** - 优化的事件监听和清理机制
+7. **🛡️ 容错处理** - 完善的错误处理和边界情况考虑
 
-## 📁 Project Structure / 项目结构
+## ⚠️ 重要说明
 
-```
-wps-sdk-wrapper/
-├── index.ts          # Main entry file (framework-agnostic) / 主入口文件（框架无关）
-├── src/              # React example project / React 示例项目源码
-│   ├── App.tsx       # React example app / React 示例应用
-│   ├── main.tsx      # React example entry / React 示例入口
-│   └── mockWPSSDK.ts # Mock SDK
-├── sdk/              # WPS SDK files / WPS SDK 文件
-├── dist/             # Build output / 构建输出目录
-└── README.md         # Documentation / 说明文档
-```
+### 认证信息获取
 
-## 🤝 Contributing / 贡献
+- **appId**、**fileId** 和 **token** 必须从 **WPS 中台** 获取
+- 这些信息是访问 WPS 文档服务的必需参数
+- 请联系您的 WPS 中台管理员或技术支持获取相关认证信息
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### 技术栈支持
 
-欢迎贡献！请随时提交 Pull Request。
+本库是纯 JavaScript/TypeScript 实现，不依赖任何前端框架，可以在以下技术栈中使用：
 
-## 🌐 Related Links / 相关链接
+- ✅ 原生 JavaScript
+- ✅ React
+- ✅ Vue
+- ✅ Angular
+- ✅ 其他任何支持 ES Module 或 CommonJS 的环境
 
-- [WPS Open Platform / WPS 开放平台](https://wwo.wps.cn/)
-- [React Official Documentation / React 官方文档](https://reactjs.org/)
-- [Vue.js Official Documentation / Vue.js 官方文档](https://vuejs.org/)
-- [Angular Official Documentation / Angular 官方文档](https://angular.io/)
-- [TypeScript Official Documentation / TypeScript 官方文档](https://www.typescriptlang.org/)
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request 来完善这个库！
+
+## 📄 许可证
+
+MIT License
