@@ -19,7 +19,9 @@ export const initWPS = async ({
   trackRevisions = true,
   ...params
 }: WpsInitParams) => {
-  if (!fileId) return null;
+  if (!fileId || !appId || !token) {
+    throw new Error("fileId、appId、token 不能为空");
+  };
 
   // 配置项
   const loadOptions = {
@@ -61,7 +63,7 @@ export const initWPS = async ({
     fileId: fileId,
     token: timeout
       ? { token, timeout }
-      : token || localStorage.getItem("token"),
+      : token,
     refreshToken,
     otlOptions: { loadOptions: JSON.stringify(loadOptions) },
     ...params,
