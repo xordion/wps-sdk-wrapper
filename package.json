@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "description": "Framework-agnostic WPS WebOffice SDK wrapper with utilities for React, Vue, and vanilla JavaScript / 框架无关的WPS WebOffice SDK封装库，支持React、Vue和原生JavaScript",
   "license": "MIT",
-  "author": "amorywoo",
+  "author": "Hong Wu <haydenwu@protonmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xordion/wps-sdk-wrapper.git"
