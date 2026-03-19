@@ -1,35 +1,36 @@
 # WPS SDK Wrapper
 
-Framework-agnostic wrapper for WPS WebOffice SDK.  
-一个框架无关的 WPS WebOffice SDK 封装库。
+[English](README.md) | [中文](README.zh-CN.md)
+
+Framework-agnostic wrapper for WPS WebOffice SDK.
 
 ---
 
-## Overview | 项目简介
+## Bundled WPS SDK
 
-**English**
+This package bundles **WPS WebOffice SDK v2.0.6** (`web-office-sdk-solution-v2.0.6.es.js`).  
+No separate SDK installation is required.
+
+---
+
+## Overview
 
 `wps-sdk-wrapper` provides a stable, typed utility layer for WPS WebOffice integrations.  
 It helps you initialize WebOffice, manage revisions, search/replace text, and apply formatting in React, Vue, or vanilla JavaScript projects.
 
-**中文**
+---
 
-`wps-sdk-wrapper` 为 WPS WebOffice 提供统一且类型安全的工具层。  
-可用于初始化 WebOffice、修订处理、文本搜索替换、格式化等能力，适配 React、Vue 与原生 JavaScript 项目。
+## Features
+
+- Framework-agnostic, pure TypeScript implementation
+- Built-in WPS WebOffice SDK runtime (v2.0.6)
+- Rich document utilities (search, locate, replace, insert)
+- Revision-oriented helpers and change coloring
+- Clear module boundaries and reusable APIs
 
 ---
 
-## Features | 特性
-
-- Framework-agnostic, pure TypeScript implementation | 框架无关，纯 TypeScript 实现
-- Built-in WPS WebOffice SDK runtime | 内置 WPS WebOffice SDK 运行时
-- Rich document utilities (search, locate, replace, insert) | 完整文档工具（搜索、定位、替换、插入）
-- Revision-oriented helpers and change coloring | 修订管理与变更着色能力
-- Clear module boundaries and reusable APIs | 模块边界清晰，API 易复用
-
----
-
-## Installation | 安装
+## Installation
 
 ```bash
 npm install wps-sdk-wrapper
@@ -37,7 +38,7 @@ npm install wps-sdk-wrapper
 
 ---
 
-## Required Credentials | 必要认证参数
+## Required Credentials
 
 Before calling `initWPS`, prepare:
 
@@ -45,20 +46,13 @@ Before calling `initWPS`, prepare:
 - `fileId`: target file identifier
 - `token`: access token returned/validated by your backend process
 
-调用 `initWPS` 前，你需要准备：
-
-- `appId`：由 WPS WebOffice 控制台分配
-- `fileId`：目标文件 ID
-- `token`：由你的后端签发/校验的访问令牌
-
-> Do not hardcode real tokens in source code or README examples.  
-> 请勿在源码或 README 示例中硬编码真实 token。
+> Do not hardcode real tokens in source code or README examples.
 
 ---
 
-## Quick Start | 快速开始
+## Quick Start
 
-### 1) Import | 导入
+### 1) Import
 
 ```ts
 import {
@@ -71,7 +65,7 @@ import {
 } from "wps-sdk-wrapper";
 ```
 
-### 2) Initialize | 初始化
+### 2) Initialize
 
 ```ts
 const result = await initWPS({
@@ -94,7 +88,7 @@ const result = await initWPS({
 console.log("init result", result);
 ```
 
-### 3) Save Document | 保存文档
+### 3) Save Document
 
 ```ts
 await saveDocument(result.wps);
@@ -102,32 +96,101 @@ await saveDocument(result.wps);
 
 ---
 
-## Public API | 对外 API
+## Public API
 
 This list follows the package root export (`index.ts`).
-下列方法以包入口导出（`index.ts`）为准。
+
+### Core (`core.ts`)
+
+Recommended:
 
 - `initWPS(options)`
 - `saveDocument(wps)`
 - `getWPSApplication(wps)`
 - `setDocumentReadOnly(wps, isReadOnly)`
+
+### Highlight (`highlight.ts`)
+
+Recommended:
+
 - `clearHitHighlight(app)`
-- `clearAllText(app)`
+- `highlightByRange(app, pos, length)`
+- `coloredOnChange(wps, color?)`
+
+Deprecated (not recommended):
+
+- `highlightText(app, pos, length)` -> use `highlightByRange`
+
+### Search (`search.ts`)
+
+Recommended:
+
+- No new recommended root API in this module. Prefer match module helpers.
+
+Deprecated (not recommended):
+
+- `searchAndLocateText(app, query)` -> use `queryTopMatches` / `navigateTopMatch`
+
+### Match (`match.ts`)
+
+Recommended:
+
+- `getSelectionState(app)`
+- `navigateTopMatch({ app, keyword, direction, currentMatchIndex, previousMatchesLength, ... })`
+- `selectMatchRange(app, match)`
+
+Deprecated (not recommended):
+
+- `textPosToWpsPos(app, textPos)`
+- `queryTopMatches(app, keyword, precision?)`
+- `computeNextMatchIndex(input)`
+
+### Text (`text.ts`)
+
+Recommended:
+
+- `handleInsertText(app, { text?, insert })`
+
+Deprecated (not recommended):
+
+- `insertTextAtCursor(app, text)` -> use `handleInsertText(app, { insert })`
+- `replaceOriginalContent(app, origin, replace, pos, len, isHighlight?)` -> use `handleInsertText`
+
+### Revisions (`revisions.ts` / `common.ts`)
+
+Recommended:
+
 - `collectRevisionInfos(revisions)`
 - `getLatestRevisionDate(app)`
 - `getRevisionCount(app)`
 - `handleRevisionContent(app, date, isReject?)`
-- `collectNewRevisionDatesAfter(app, baseDate)`
-- `cancelRevisions(app, revisionIds)`
-- `handleInsertText(app, text, options?)`
-- `getSelectionState(app)`
-- `navigateTopMatch(app, direction, options?)`
+- `collectNewRevisionDatesAfter(app, countBefore)`
+- `cancelRevisions(app, dates)`
+- `toggleRevisionHandler(app, isShow)`
+
+Deprecated (not recommended):
+
+- `getRevisionByDate(app, date?)` -> use `handleRevisionContent` / `cancelRevisions`
+- `handleMatchingRevisions(revisions, type?)` -> use `cancelRevisions` / `handleRevisionContent`
+
+### Formatting (`formatting.ts`)
+
+Recommended:
+
+- `clearAllText(app)`
 - `formatDocumentFont(app, font)`
-- `coloredOnChange(wps, color?)`
-- `toggleRevisionHandler(wps, enabled)`
+
+Deprecated (not recommended):
+
+- `getDocLength(app)` -> internal compatibility helper
+
+### Utils (`utils.ts`)
+
+Deprecated (not recommended):
+
+- `generateRandomString(length, includeUpperCase?, includeLowerCase?)` -> internal compatibility helper
 
 Type exports:
-类型导出：
 
 - `Wps`
 - `WpsApplication`
@@ -139,7 +202,7 @@ Type exports:
 
 ---
 
-## Security Checklist | 脱敏检查清单
+## Security Checklist
 
 For publishing or open-source release, verify:
 
@@ -149,17 +212,9 @@ For publishing or open-source release, verify:
 - No registry auth tokens in `.npmrc`
 - No personal/private emails exposed unless intentionally public
 
-用于发布或开源前，请确认：
-
-- 代码和文档中没有真实 `token`、`appId`、`fileId`、内部域名
-- 未提交 `.env*` 文件
-- 未提交私钥/证书文件（`.pem`、`.key`、`.p12`、`.pfx`、`.jks` 等）
-- `.npmrc` 中没有 registry 鉴权 token
-- 未暴露不应公开的个人邮箱
-
 ---
 
-## Development | 开发
+## Development
 
 ```bash
 npm run dev
@@ -169,13 +224,12 @@ npm run prepublishOnly
 
 ---
 
-## Contributing | 贡献
+## Contributing
 
-Issues and pull requests are welcome.  
-欢迎提交 Issue 与 Pull Request。
+Issues and pull requests are welcome.
 
 ---
 
-## License | 许可证
+## License
 
 MIT

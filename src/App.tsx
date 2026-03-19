@@ -6,6 +6,7 @@ import {
   handleInsertText,
   getSelectionState,
   navigateTopMatch,
+  selectMatchRange,
   type SearchMatchRange,
   getWPSApplication,
   setDocumentReadOnly,
@@ -25,7 +26,7 @@ import "./App.css";
 function App() {
   const { t, i18n: i18nInstance } = useTranslation();
   const initData = JSON.parse(localStorage.getItem("recentInitData") || "{}");
-  
+
   const [fileId, setFileId] = useState(initData.fileId || "");
   const [appId, setAppId] = useState(initData.appId || "");
   const [token, setToken] = useState(initData.token || "");
@@ -44,7 +45,7 @@ function App() {
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const revisionDatesToCancel = useRef<string[]>([]);
   const clearWpsListener = useRef<any>(null);
-  
+
   // 语言切换处理函数
   const handleLanguageChange = (lang: string) => {
     i18nInstance.changeLanguage(lang);
@@ -247,7 +248,13 @@ function App() {
     try {
       const { hasSelection } = await getSelectionState(appRef.current);
       if (!hasSelection && searchText.trim()) {
-        await handleNavigateMatch("next", { forceSelectFirst: true, silentWhenFirst: true });
+        // 有搜索结果时，选中当前 currentMatchIndex 对应的项（用户可能已通过上/下一个切到第三项）
+        // 避免 forceSelectFirst 导致始终选中第一项
+        if (searchMatches.length > 0 && currentMatchIndex >= 0 && currentMatchIndex < searchMatches.length) {
+          await selectMatchRange(appRef.current, searchMatches[currentMatchIndex]);
+        } else {
+          await handleNavigateMatch("next", { forceSelectFirst: true, silentWhenFirst: true });
+        }
       }
       const countBefore = await getRevisionCount(appRef.current);
       await handleInsertText(appRef.current, {

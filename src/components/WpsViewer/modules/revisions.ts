@@ -18,6 +18,9 @@ export {
   collectRevisionInfos,
 } from './common';
 
+/**
+ * @deprecated Use `cancelRevisions` or `handleRevisionContent` for business-level revision operations. 业务侧请优先使用 `cancelRevisions` 或 `handleRevisionContent`。
+ */
 export const handleMatchingRevisions = async (revisions: RevisionInfo[], type?: 'reject' | 'accept') => {
   for (const info of revisions) {
     try {

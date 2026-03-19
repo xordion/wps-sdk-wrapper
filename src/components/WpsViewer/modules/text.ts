@@ -3,6 +3,9 @@ import { generateRandomString } from "./utils";
 import { getLatestRevisionDate } from "./common";
 import { coloringTextByRange, setInputColor } from "./common";
 import { searchAndLocateText } from "./search";
+/**
+ * @deprecated Use `handleInsertText(app, { insert })` instead. 请改用 `handleInsertText(app, { insert })`。
+ */
 export const insertTextAtCursor = async (app: WpsApplication, text: string) => {
   try {
     const selection = await app.ActiveDocument.ActiveWindow.Selection;
@@ -24,6 +27,9 @@ export const insertTextAtCursor = async (app: WpsApplication, text: string) => {
   }
 };
 
+/**
+ * @deprecated Use \navigateTopMatch` + `handleInsertText` instead (query & select -> insert). 请改用 `navigateTopMatch` + `handleInsertText`（查询 + 选中 -> 插入文本）。`
+ */
 export const replaceOriginalContent = async (
   app: Wps,
   origin: string = "",

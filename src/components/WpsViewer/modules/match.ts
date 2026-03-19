@@ -37,6 +37,9 @@ export interface NavigateTopMatchResult {
   selected: boolean;
 }
 
+/**
+ * @deprecated Internal compatibility helper. Prefer using `navigateTopMatch` directly. 兼容辅助函数，优先直接使用 `navigateTopMatch`。
+ */
 export const textPosToWpsPos = async (
   app: WpsApplication,
   textPos: number,
@@ -75,6 +78,9 @@ export const selectMatchRange = async (
   return true;
 };
 
+/**
+ * @deprecated Prefer `navigateTopMatch` when you also need selection behavior. 如需包含选中行为，优先使用 `navigateTopMatch`。
+ */
 export const queryTopMatches = async (
   app: WpsApplication,
   keyword: string,
@@ -121,6 +127,9 @@ export const resolveCurrentMatchIndex = (
   return Math.min(currentMatchIndex, latestMatchesLength - 1);
 };
 
+/**
+ * @deprecated Internal compatibility helper. Prefer `navigateTopMatch` for index resolution. 兼容辅助函数，优先使用 `navigateTopMatch`。
+ */
 export const computeNextMatchIndex = ({
   direction,
   currentMatchIndex,

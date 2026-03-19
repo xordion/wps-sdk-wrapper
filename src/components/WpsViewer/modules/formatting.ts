@@ -1,6 +1,9 @@
 import { getLatestRevisionDate, getRevisionByDate, delay } from "./common";
 import { handleMatchingRevisions } from "./revisions";
 
+/**
+ * @deprecated Prefer feature APIs such as `clearAllText` / `formatDocumentFont` instead of direct length dependency. 建议优先使用业务 API（如 `clearAllText` / `formatDocumentFont`）。
+ */
 export const getDocLength = async (app: any) => {
   const DocumentRange = await app.ActiveDocument.GetDocumentRange();
   const End = await DocumentRange.End;

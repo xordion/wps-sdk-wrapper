@@ -214,6 +214,7 @@ async function highlightMatches(app: any, matches: SearchMatchItem[]) {
 
 /**
  * 统一搜索入口：仅接收对象参数，返回最高匹配（含并列）
+ * @deprecated Use `queryTopMatches` / `navigateTopMatch` for navigation-centric scenarios. 请优先使用 `queryTopMatches` / `navigateTopMatch`。
  */
 export async function searchAndLocateText(
   app: any,

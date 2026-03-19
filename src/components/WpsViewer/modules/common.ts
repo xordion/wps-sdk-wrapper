@@ -76,6 +76,9 @@ export const collectRevisionInfos = async (revisions: any) => {
   return revisionInfos;
 };
 
+/**
+ * @deprecated Use `handleRevisionContent` / `cancelRevisions` for revision workflows. 修订流程请优先使用 `handleRevisionContent` / `cancelRevisions`。
+ */
 export const getRevisionByDate = async (app: Wps, date?: string) => {
   if (!date) {
     console.warn('没有日期，无法获取修订信息');

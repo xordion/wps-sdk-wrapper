@@ -6,6 +6,9 @@ export const clearHitHighlight = (app: any) => {
   }
 };
 
+/**
+ * @deprecated Use `highlightByRange` instead. 请改用 `highlightByRange`。
+ */
 export const highlightText = async (app: any, pos: number, length: number) => {
   try {
     if (!app) return false;
