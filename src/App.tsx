@@ -19,7 +19,7 @@ import {
   collectNewRevisionDatesAfter,
   cancelRevisions,
   getRevisionCount,
-  // } from '../index'
+  // }from 'wps-sdk-wrapper';
 } from "wps-component";
 import "./App.css";
 
