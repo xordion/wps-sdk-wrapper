@@ -65,15 +65,17 @@ export const handleInsertText = async (
   try {
     if (!text) {
       // 场景1: 在光标位置添加文本
-      await insertTextAtCursor(app, insert);
+      insertTextAtCursor(app, insert);
+      return true;
     } else {
       // 场景2: 查找并替换指定文本
-      const searchResult = await searchAndLocateText(app, text, true);
-      if (searchResult && typeof searchResult.pos === 'number' && typeof searchResult.len === 'number') {
-        const { pos, len } = searchResult;
-        // 找到文本，进行替换
-        // const textLength = text.length;
-
+      const searchResult = await searchAndLocateText(app, {
+        targetText: text,
+        precision: 100,
+      });
+      const firstMatch = searchResult?.topMatches?.[0];
+      if (firstMatch && typeof firstMatch.pos === "number" && typeof firstMatch.len === "number") {
+        const { pos, len } = firstMatch;
         // 设置选择范围为找到的文本
         const range = app?.ActiveDocument?.Range?.SetRange(
           pos,
@@ -83,9 +85,9 @@ export const handleInsertText = async (
         if (range) {
           // 替换选中的文本
           range.Text = insert;
-
           // 可选：设置替换后的文本样式（如高亮显示）
           // range.HighlightColorIndex = app?.Enum?.WdColorIndex?.wdYellow;
+          return true;
         }
       } else {
         console.warn("未找到指定文本:", text);
@@ -94,9 +96,12 @@ export const handleInsertText = async (
         if (range) {
           const endRange = range.SetRange(range.End, range.End);
           endRange.Text = `\n${insert}`;
+          return true;
         }
       }
     }
+    // 如果到达这里说明没有可替换的文本，也没有插入成功
+    return false;
   } catch (error) {
     console.error("处理替换文本失败:", error);
     return false;

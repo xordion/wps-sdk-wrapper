@@ -1,11 +1,22 @@
 import { Wps } from '@/interface';
 import { highlightByRange } from './highlight';
 import type { RevisionInfo } from './common';
-import { delay, getLatestRevisionDate, getRevisionByDate } from './common';
+import {
+  delay,
+  getLatestRevisionDate,
+  getRevisionByDate,
+  getRevisionsAfterIndex,
+} from './common';
 
 // 重新导出 common 中的内容，保持向后兼容
 export type { RevisionInfo } from './common';
-export { delay, getLatestRevisionDate, getRevisionByDate, collectRevisionInfos } from './common';
+export {
+  delay,
+  getLatestRevisionDate,
+  getRevisionByDate,
+  getRevisionsAfterIndex,
+  collectRevisionInfos,
+} from './common';
 
 export const handleMatchingRevisions = async (revisions: RevisionInfo[], type?: 'reject' | 'accept') => {
   for (const info of revisions) {
@@ -44,6 +55,37 @@ export const handleRevisionContent = async (
   } catch (error) {
     console.error('处理修订时出错:', error);
   }
+};
+
+/**
+ * 操作后比对修订列表，收集本次新增修订的 date 数组。
+ * 取消时只撤销这些 date，不受后续用户编辑影响。
+ */
+export const collectNewRevisionDatesAfter = async (
+  app: Wps,
+  countBefore: number
+): Promise<string[]> => {
+  const newRevisions = await getRevisionsAfterIndex(app, countBefore);
+  return [...new Set(newRevisions.map((r) => r.date).filter(Boolean))];
+};
+
+/**
+ * 取消修订：按 dates 撤销匹配的修订。未传日期则不执行。
+ */
+export const cancelRevisions = async (
+  app: Wps,
+  dates: string[]
+): Promise<boolean> => {
+  if (!dates.length) return false;
+  const allRevisions = (
+    await Promise.all(dates.map((date) => getRevisionByDate(app, date)))
+  ).flat();
+  const uniqueByIndex = [...new Map(allRevisions.map((r) => [r.index, r])).values()].sort(
+    (a, b) => b.index - a.index
+  );
+  if (!uniqueByIndex.length) return false;
+  await handleMatchingRevisions(uniqueByIndex, 'reject');
+  return true;
 };
 
 

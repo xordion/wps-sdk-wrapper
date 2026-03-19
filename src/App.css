@@ -319,6 +319,26 @@
   transform: translateY(1px);
 }
 
+.insert-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.insert-actions .match-counter {
+  min-width: 44px;
+  font-size: 13px;
+  color: #555;
+  font-family: "Monaco", "Consolas", monospace;
+}
+
+.insert-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background: #a8b3f3;
+}
+
 .logs-section {
   flex: 1;
   display: flex;

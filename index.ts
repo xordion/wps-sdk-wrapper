@@ -1,23 +1,33 @@
+
 // 统一导出所有WPS公共方法
 export {
   clearHitHighlight,
   clearAllText,
   collectRevisionInfos,
-  getDocLength,
-  generateRandomString,
+  // getDocLength,
+  // generateRandomString,
   getLatestRevisionDate,
-  getRevisionByDate,
+  getRevisionCount,
+  // getRevisionByDate,
   getWPSApplication,
   handleRevisionContent,
-  highlightByRange,
-  highlightText,
+  collectNewRevisionDatesAfter,
+  cancelRevisions,
+  // highlightByRaånge,
+  // highlightText,
   initWPS,
-  insertTextAtCursor,
-  handleMatchingRevisions,
-  replaceOriginalContent,
+  // insertTextAtCursor,
+  // handleMatchingRevisions,
+  // replaceOriginalContent,
   handleInsertText,
+  // textPosToWpsPos,
+  // selectMatchRange,
+  // queryTopMatches,
+  getSelectionState,
+  // computeNextMatchIndex,
+  navigateTopMatch,
   saveDocument,
-  searchAndLocateText,
+  // searchAndLocateText,
   setDocumentReadOnly,
   formatDocumentFont,
   coloredOnChange,
@@ -33,3 +43,5 @@ export type {
   WpsCommandBar,
   WpsInitParams
 } from '@/interface';
+
+export type { SearchMatchRange } from '@/components/WpsViewer/modules/match';

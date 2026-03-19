@@ -15,6 +15,32 @@ export const delay = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
+export const getRevisionCount = async (app: Wps): Promise<number> => {
+  try {
+    const revisions = await app?.ActiveDocument?.Revisions;
+    const count = await revisions?.Count;
+    return typeof count === 'number' ? count : 0;
+  } catch {
+    return 0;
+  }
+};
+
+/** 获取索引大于 startIndex 的修订（用于撤销「本次替换」产生的全部修订：删除+新增） */
+export const getRevisionsAfterIndex = async (
+  app: Wps,
+  startIndex: number
+): Promise<RevisionInfo[]> => {
+  try {
+    const revisions = await app?.ActiveDocument?.Revisions;
+    const revisionInfos = await collectRevisionInfos(revisions);
+    return revisionInfos
+      .filter((info) => info.index > startIndex)
+      .sort((a, b) => b.index - a.index);
+  } catch {
+    return [];
+  }
+};
+
 export const getLatestRevisionDate = async (app: Wps): Promise<string> => {
   try {
     const revisions = await app?.ActiveDocument?.Revisions;

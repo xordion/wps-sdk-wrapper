@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
   clearHitHighlight,
-  searchAndLocateText,
-  insertTextAtCursor,
   saveDocument,
   handleInsertText,
+  getSelectionState,
+  navigateTopMatch,
+  type SearchMatchRange,
   getWPSApplication,
   setDocumentReadOnly,
   initWPS,
@@ -14,9 +15,10 @@ import {
   coloredOnChange,
   toggleRevisionHandler,
   collectRevisionInfos,
-  handleRevisionContent,
-  getLatestRevisionDate,
-  // } from '../dist/index.mjs'
+  collectNewRevisionDatesAfter,
+  cancelRevisions,
+  getRevisionCount,
+  // } from '../index'
 } from "wps-component";
 import "./App.css";
 
@@ -26,20 +28,21 @@ function App() {
   
   const [fileId, setFileId] = useState(initData.fileId || "");
   const [appId, setAppId] = useState(initData.appId || "");
+  const [token, setToken] = useState(initData.token || "");
   const [fileName, setFileName] = useState("可测试-销售合同.doc");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("模拟文档");
   const [insertText, setInsertText] = useState("这是插入的文本");
-  const [cursorInsertText, setCursorInsertText] = useState("光标插入文本");
   const [selectedFont, setSelectedFont] = useState("楷体");
   const [logs, setLogs] = useState<string[]>([]);
   const [showToken, setShowToken] = useState(false);
-  const [token, setToken] = useState(initData.token || "");
   const [inputColorEnabled, setInputColorEnabled] = useState(false);
   const [currentInputColor, setCurrentInputColor] = useState("#ff0000");
   const [revisionButtonsVisible, setRevisionButtonsVisible] = useState(true);
-  const latestDateValue = useRef<string>("");
+  const [searchMatches, setSearchMatches] = useState<SearchMatchRange[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const revisionDatesToCancel = useRef<string[]>([]);
   const clearWpsListener = useRef<any>(null);
   
   // 语言切换处理函数
@@ -49,15 +52,12 @@ function App() {
     if (lang === 'zh') {
       setSearchText("模拟文档");
       setInsertText("这是插入的文本");
-      setCursorInsertText("光标插入文本");
     } else if (lang === 'en') {
       setSearchText("Sample Document");
       setInsertText("This is inserted text");
-      setCursorInsertText("Cursor insert text");
     } else if (lang === 'ja') {
       setSearchText("サンプル文書");
       setInsertText("これは挿入されたテキストです");
-      setCursorInsertText("カーソル挿入テキスト");
     }
   };
 
@@ -187,9 +187,41 @@ function App() {
     }
   };
 
-  const handleLoadingChange = (isLoading: boolean) => {
-    setLoading(isLoading);
-    addLog(isLoading ? "正在加载 WPS..." : "加载完成");
+  const handleNavigateMatch = async (
+    direction: "prev" | "next",
+    options?: { forceSelectFirst?: boolean; silentWhenFirst?: boolean }
+  ) => {
+    if (!appRef.current) {
+      addLog("WPS 未初始化，无法切换匹配项");
+      return;
+    }
+    if (!searchText.trim()) {
+      addLog("搜索词为空，无法切换匹配项");
+      return;
+    }
+
+    const result = await navigateTopMatch({
+      app: appRef.current,
+      keyword: searchText,
+      direction,
+      currentMatchIndex,
+      previousMatchesLength: searchMatches.length,
+      precision: 80,
+      forceSelectFirst: options?.forceSelectFirst,
+    });
+
+    if (!result.matches.length) {
+      setSearchMatches([]);
+      setCurrentMatchIndex(0);
+      addLog(`未找到可切换的 topMatches: "${searchText}"`);
+      return;
+    }
+
+    setSearchMatches(result.matches);
+    setCurrentMatchIndex(result.nextIndex);
+    if (!(options?.silentWhenFirst && result.nextIndex === 0 && options?.forceSelectFirst)) {
+      addLog(`已定位 topMatches: ${result.nextIndex + 1}/${result.matches.length}`);
+    }
   };
 
   // 工具方法示例
@@ -200,16 +232,7 @@ function App() {
     }
 
     try {
-      const result = await searchAndLocateText(
-        appRef.current,
-        searchText,
-        true
-      );
-      if (result) {
-        addLog(`搜索成功: 找到文本 "${searchText}"，位置: ${result.pos}`);
-      } else {
-        addLog(`搜索失败: 未找到文本 "${searchText}"`);
-      }
+      await handleNavigateMatch("next", { forceSelectFirst: true, silentWhenFirst: true });
     } catch (error: any) {
       addLog(`搜索出错: ${error.message}`);
     }
@@ -222,41 +245,25 @@ function App() {
     }
 
     try {
-      // 添加文本替换示例，支持输入原文进行替换
+      const { hasSelection } = await getSelectionState(appRef.current);
+      if (!hasSelection && searchText.trim()) {
+        await handleNavigateMatch("next", { forceSelectFirst: true, silentWhenFirst: true });
+      }
+      const countBefore = await getRevisionCount(appRef.current);
       await handleInsertText(appRef.current, {
-        text: searchText ? searchText : undefined, // searchText为输入的原文，没有则 undefined
+        text: undefined, // searchText为输入的原文，没有则 undefined
         insert: insertText,
       });
 
       addLog(`成功插入文本: "${insertText}"`);
       setTimeout(async () => {
-        // 获取最新的修订日期
-        const latestDate = await getLatestRevisionDate(appRef.current);
-        console.log('latestDate', latestDate);
-        latestDateValue.current = latestDate;
+        revisionDatesToCancel.current = await collectNewRevisionDatesAfter(
+          appRef.current!,
+          countBefore
+        );
       }, 1000);
     } catch (error: any) {
       addLog(`插入文本出错: ${error.message}`);
-    }
-  };
-
-  const handleCursorInsert = async () => {
-    if (!appRef.current) {
-      addLog("WPS 未初始化，无法在光标处插入文本");
-      return;
-    }
-
-    try {
-      await insertTextAtCursor(appRef.current, cursorInsertText);
-      addLog(`成功在光标处插入文本: "${cursorInsertText}"`);
-      setTimeout(async () => {
-        // 获取最新的修订日期
-        const latestDate = await getLatestRevisionDate(appRef.current);
-        console.log('latestDate', latestDate);
-        latestDateValue.current = latestDate;
-      }, 1000);
-    } catch (error: any) {
-      addLog(`在光标处插入文本出错: ${error.message}`);
     }
   };
 
@@ -335,27 +342,15 @@ function App() {
       addLog("WPS 未初始化，无法取消修订");
       return;
     }
-
     try {
-      addLog("正在获取最新修订信息...");
-
-      // 获取最新的修订日期
-      const latestDate = latestDateValue.current || await getLatestRevisionDate(appRef.current);
-      console.log('latestDate', latestDate);
-      if (!latestDate) {
-        addLog("未找到修订记录");
-        return;
-      }
-
-      addLog(`找到最新修订，日期: ${latestDate}`);
-
-      // 调用取消修订接口，isReject = true 表示拒绝（取消）修订
-      await handleRevisionContent(appRef.current, latestDate, true);
-
-      addLog("修订已成功取消");
+      const ok = await cancelRevisions(
+        appRef.current,
+        revisionDatesToCancel.current
+      );
+      if (ok) revisionDatesToCancel.current = [];
+      addLog(ok ? "修订已成功取消" : "未找到修订记录");
     } catch (error: any) {
       addLog(`取消修订失败: ${error.message}`);
-      console.error("取消修订出错:", error);
     }
   };
 
@@ -400,6 +395,7 @@ function App() {
     // 使用initWPS工具方法替换重复逻辑
     try {
       await initWPS({
+        // version: "v1",
         fileId,
         appId,
         fileName,
@@ -408,6 +404,11 @@ function App() {
         isReadOnly,
         simple: false,
         token,
+        // timeout: 5 * 1000,
+        // refreshToken: () => new Promise((resolve) => {
+        //   console.log('refreshToken');
+        //   resolve({ token: '<mock-jwt-token>', timeout: 2 * 1000 } as WpsToken);
+        // }),
         commandBars: [
           {
             cmbId: 'TabInsertTab', // 组件 ID
@@ -489,8 +490,8 @@ function App() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '14px', color: '#666', fontWeight: '500' }}>🌐 Language:</label>
-            <select 
-              value={i18nInstance.language} 
+            <select
+              value={i18nInstance.language}
               onChange={(e) => handleLanguageChange(e.target.value)}
               style={{
                 padding: '6px 12px',
@@ -546,6 +547,7 @@ function App() {
                     type={showToken ? "text" : "password"}
                     value={token}
                     onChange={(e) => {
+                      localStorage.setItem("token", e.target.value);
                       setToken(e.target.value);
                     }}
                     placeholder={t('tokenPlaceholder')}
@@ -614,7 +616,11 @@ function App() {
               <input
                 type="text"
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(e) => {
+                  setSearchText(e.target.value);
+                  setSearchMatches([]);
+                  setCurrentMatchIndex(0);
+                }}
                 placeholder={t('searchPlaceholder')}
               />
               <button onClick={handleSearch}>{t('searchButton')}</button>
@@ -629,19 +635,30 @@ function App() {
                 onChange={(e) => setInsertText(e.target.value)}
                 placeholder={t('insertPlaceholder')}
               />
-              <button onClick={handleInsert}>{t('insertButton')}</button>
+              <div className="insert-actions">
+                <button onClick={handleInsert}>{t('insertButton')}</button>
+                <button
+                  onClick={() => handleNavigateMatch("prev")}
+                  disabled={!searchText.trim()}
+                  title={t('prevMatch')}
+                >
+                  ↑
+                </button>
+                <button
+                  onClick={() => handleNavigateMatch("next")}
+                  disabled={!searchText.trim()}
+                  title={t('nextMatch')}
+                >
+                  ↓
+                </button>
+                <span className="match-counter">
+                  {searchMatches.length
+                    ? `${currentMatchIndex + 1}/${searchMatches.length}`
+                    : "0/0"}
+                </span>
+              </div>
             </div>
 
-            <div className="tool-group">
-              <h4>{t('cursorInsert')}</h4>
-              <input
-                type="text"
-                value={cursorInsertText}
-                onChange={(e) => setCursorInsertText(e.target.value)}
-                placeholder={t('cursorInsertPlaceholder')}
-              />
-              <button onClick={handleCursorInsert}>{t('cursorInsertButton')}</button>
-            </div>
 
             <div className="tool-group">
               <h4>{t('fontSettings')}</h4>
@@ -672,7 +689,7 @@ function App() {
               <button onClick={handleSave}>{t('saveDoc')}</button>
               <button onClick={handleClearAllText}>{t('clearDoc')}</button>
               <button onClick={handleToggleReadOnly}>
-                {t('toggleReadOnly')}{isReadOnly ? t('editable') : t('readonly')}模式
+                {t('toggleReadOnly')} {isReadOnly ? t('editable') : t('readonly')}模式
               </button>
             </div>
 
@@ -699,7 +716,7 @@ function App() {
                     color: "#666",
                   }}
                 >
-                  {t('inputColor')}
+                  {t('inputColor')}:
                 </label>
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "8px" }}
