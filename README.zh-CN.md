@@ -58,9 +58,9 @@ npm install wps-sdk-wrapper
 import {
   initWPS,
   saveDocument,
-  getWPSApplication,
-  searchAndLocateText,
-  insertTextAtCursor,
+  navigateTopMatch,
+  handleInsertText,
+  formatSearchTextForDocMatch,
   coloredOnChange,
 } from "wps-sdk-wrapper";
 ```
@@ -92,6 +92,23 @@ console.log("init result", result);
 
 ```ts
 await saveDocument(result.wps);
+```
+
+### 4) 规范化搜索 / 插入文本
+
+```ts
+const keyword = formatSearchTextForDocMatch("1. 付款条款");
+const { matches } = await navigateTopMatch({
+  app: result.app,
+  keyword,
+  direction: "next",
+  currentMatchIndex: 0,
+  previousMatchesLength: 0,
+});
+
+await handleInsertText(result.app, {
+  insert: formatSearchTextForDocMatch("（1）更新后的付款条款"),
+});
 ```
 
 ---
@@ -179,6 +196,7 @@ await saveDocument(result.wps);
 
 - `clearAllText(app)`
 - `formatDocumentFont(app, font)`
+- `formatSearchTextForDocMatch(input)`
 
 已废弃（不推荐）：
 

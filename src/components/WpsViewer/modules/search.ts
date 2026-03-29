@@ -6,6 +6,17 @@ export interface SearchMatchItem {
   similarity: number;
 }
 
+interface SlidingWindowMatchItem {
+  text: string;
+  len: number;
+  similarity: number;
+}
+
+interface SlidingWindowPositionedMatchItem extends SlidingWindowMatchItem {
+  pos: number;
+  end: number;
+}
+
 export interface SearchQuery {
   targetText: string;
   precision: number;
@@ -17,7 +28,7 @@ export interface SearchQuery {
 export interface SearchResult {
   targetText: string;
   topMatches: SearchMatchItem[];
-  matches: SearchMatchItem[];
+  matches: string[];
   precision: number;
   topSimilarity: number;
 }
@@ -45,14 +56,19 @@ function normalizePrecision(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
-function isOverlapped(a: SearchMatchItem, b: SearchMatchItem): boolean {
+function isOverlapped(
+  a: SlidingWindowPositionedMatchItem,
+  b: SlidingWindowPositionedMatchItem
+): boolean {
   return a.pos < b.end && b.pos < a.end;
 }
 
 /**
  * 对重叠窗口做去重，保留相似度更高的候选
  */
-function dedupeOverlappedMatches(matches: SearchMatchItem[]): SearchMatchItem[] {
+function dedupeOverlappedMatches(
+  matches: SlidingWindowPositionedMatchItem[]
+): SlidingWindowPositionedMatchItem[] {
   if (!matches.length) return [];
 
   const sortedByScore = [...matches].sort((a, b) => {
@@ -60,7 +76,7 @@ function dedupeOverlappedMatches(matches: SearchMatchItem[]): SearchMatchItem[] 
     return a.pos - b.pos;
   });
 
-  const selected: SearchMatchItem[] = [];
+  const selected: SlidingWindowPositionedMatchItem[] = [];
   for (const candidate of sortedByScore) {
     const hasOverlap = selected.some((item) => isOverlapped(item, candidate));
     if (!hasOverlap) {
@@ -148,11 +164,11 @@ function buildSlidingWindowMatches(
   targetText: string,
   precision: number,
   caseSensitive: boolean
-): SearchMatchItem[] {
+): SlidingWindowMatchItem[] {
   const targetLen = targetText.length;
   if (!targetLen || fullText.length < targetLen) return [];
 
-  const candidates: SearchMatchItem[] = [];
+  const candidates: SlidingWindowPositionedMatchItem[] = [];
   const maxStart = fullText.length - targetLen;
   const normalizedTarget = caseSensitive ? targetText : targetText.toLowerCase();
   const normalizedFullText = caseSensitive ? fullText : fullText.toLowerCase();
@@ -177,38 +193,63 @@ function buildSlidingWindowMatches(
     }
   }
 
-  return dedupeOverlappedMatches(candidates);
-}
-
-function pickTopSimilarityMatches(matches: SearchMatchItem[]): SearchMatchItem[] {
-  if (!matches.length) return [];
-  const highestSimilarity = Math.max(...matches.map((item) => item.similarity));
-  return matches.filter(
-    (item) => Math.abs(item.similarity - highestSimilarity) < 0.0001
+  return dedupeOverlappedMatches(candidates).map(
+    ({ text, len, similarity }): SlidingWindowMatchItem => ({
+      text,
+      len,
+      similarity,
+    })
   );
 }
 
-async function highlightMatches(app: any, matches: SearchMatchItem[]) {
-  if (!app || !matches.length) return;
-  const find = app?.ActiveDocument?.Find;
+function pickTopSimilarityMatches(
+  matches: SlidingWindowMatchItem[]
+): SlidingWindowMatchItem[] {
+  if (!matches.length) return [];
 
-  try {
-    await find?.ClearHitHighlight?.();
-  } catch (error) {
-    console.warn("清理高亮状态失败:", error);
+  let topMatch = matches[0];
+  for (let index = 1; index < matches.length; index += 1) {
+    if (matches[index].similarity > topMatch.similarity) {
+      topMatch = matches[index];
+    }
   }
 
-  const highlightedTexts = new Set<string>();
-  for (const item of matches) {
-    const keyword = item.text?.trim();
-    if (!keyword || highlightedTexts.has(keyword)) continue;
+  return [topMatch];
+}
 
-    try {
-      await find?.Execute?.(keyword, true);
-      highlightedTexts.add(keyword);
-    } catch (error) {
-      console.warn(`高亮匹配片段失败(pos=${item.pos}, text=${keyword}):`, error);
+async function locateTopMatchByFind(
+  app: any,
+  match: SlidingWindowMatchItem,
+  shouldHighlight: boolean
+): Promise<SearchMatchItem[] | null> {
+  if (!app || !match.text) return null;
+
+  const selectionFind = await app?.ActiveDocument?.ActiveWindow?.Selection?.Find;
+  const selectionRangeFind =
+    await app?.ActiveDocument?.ActiveWindow?.Selection?.Range?.Find;
+  const documentFind = await app?.ActiveDocument?.Find;
+  const find =
+    (selectionFind?.Execute ? selectionFind : null) ||
+    (selectionRangeFind?.Execute ? selectionRangeFind : null) ||
+    documentFind;
+  if (!find?.Execute) return null;
+
+  try {
+    const rawMatches = await find.Execute(match.text.trim(), shouldHighlight);
+    if (!Array.isArray(rawMatches) || rawMatches.length === 0) {
+      return null;
     }
+
+    return rawMatches.map((item: any) => ({
+      text: match.text,
+      pos: item.pos,
+      len: item.len,
+      end: item.pos + item.len,
+      similarity: match.similarity,
+    }));
+  } catch (error) {
+    console.warn(`定位匹配片段失败(text=${match.text}):`, error);
+    return null;
   }
 }
 
@@ -247,26 +288,38 @@ export async function searchAndLocateText(
     return null;
   }
 
-  const topMatches = pickTopSimilarityMatches(matches);
-  if (shouldHighlight) {
-    if (!shouldClearPreviousHighlight) {
-      // 高亮函数默认会清空；不清空时直接逐个 Execute
-      const find = app?.ActiveDocument?.Find;
-      const highlightedTexts = new Set<string>();
-      for (const item of topMatches) {
-        const keyword = item.text?.trim();
-        if (!keyword || highlightedTexts.has(keyword)) continue;
-        await find?.Execute?.(keyword, true);
-        highlightedTexts.add(keyword);
-      }
-    } else {
-      await highlightMatches(app, topMatches);
+  const topMatchCandidates = pickTopSimilarityMatches(matches);
+  if (!topMatchCandidates.length) {
+    return null;
+  }
+
+  if (shouldClearPreviousHighlight) {
+    await app?.ActiveDocument?.Find?.ClearHitHighlight?.();
+  }
+
+  const topMatches: SearchMatchItem[] = [];
+  for (const candidate of topMatchCandidates) {
+    const locatedMatches = await locateTopMatchByFind(
+      app,
+      candidate,
+      shouldHighlight
+    );
+    if (locatedMatches) {
+      topMatches.push(...locatedMatches);
     }
   }
+
+  if (!topMatches.length) {
+    console.warn(
+      `搜索失败: 无法通过 WPS 定位文本 "${topMatchCandidates[0].text}"`
+    );
+    return null;
+  }
+
   return {
     targetText,
     topMatches,
-    matches,
+    matches: [],
     precision,
     topSimilarity: topMatches[0].similarity,
   };

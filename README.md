@@ -58,9 +58,9 @@ Before calling `initWPS`, prepare:
 import {
   initWPS,
   saveDocument,
-  getWPSApplication,
-  searchAndLocateText,
-  insertTextAtCursor,
+  navigateTopMatch,
+  handleInsertText,
+  formatSearchTextForDocMatch,
   coloredOnChange,
 } from "wps-sdk-wrapper";
 ```
@@ -92,6 +92,23 @@ console.log("init result", result);
 
 ```ts
 await saveDocument(result.wps);
+```
+
+### 4) Normalize Search / Insert Text
+
+```ts
+const keyword = formatSearchTextForDocMatch("1. Payment terms");
+const { matches } = await navigateTopMatch({
+  app: result.app,
+  keyword,
+  direction: "next",
+  currentMatchIndex: 0,
+  previousMatchesLength: 0,
+});
+
+await handleInsertText(result.app, {
+  insert: formatSearchTextForDocMatch("(1) Updated payment terms"),
+});
 ```
 
 ---
@@ -179,6 +196,7 @@ Recommended:
 
 - `clearAllText(app)`
 - `formatDocumentFont(app, font)`
+- `formatSearchTextForDocMatch(input)`
 
 Deprecated (not recommended):
 

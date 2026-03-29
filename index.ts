@@ -31,7 +31,8 @@ export {
   setDocumentReadOnly,
   formatDocumentFont,
   coloredOnChange,
-  toggleRevisionHandler
+  toggleRevisionHandler,
+  formatSearchTextForDocMatch
 } from '@/components/WpsViewer/index';
 
 // 导出所有TypeScript接口和类型定义

@@ -19,6 +19,7 @@ import {
   collectNewRevisionDatesAfter,
   cancelRevisions,
   getRevisionCount,
+  formatSearchTextForDocMatch,
   // }from 'wps-sdk-wrapper';
 } from "wps-component";
 import "./App.css";
@@ -191,19 +192,20 @@ function App() {
   const handleNavigateMatch = async (
     direction: "prev" | "next",
     options?: { forceSelectFirst?: boolean; silentWhenFirst?: boolean }
-  ) => {
+  ): Promise<boolean> => {
     if (!appRef.current) {
       addLog("WPS 未初始化，无法切换匹配项");
-      return;
+      return false;
     }
-    if (!searchText.trim()) {
+    const keyword = formatSearchTextForDocMatch(searchText);
+    if (!keyword) {
       addLog("搜索词为空，无法切换匹配项");
-      return;
+      return false;
     }
 
     const result = await navigateTopMatch({
       app: appRef.current,
-      keyword: searchText,
+      keyword,
       direction,
       currentMatchIndex,
       previousMatchesLength: searchMatches.length,
@@ -214,8 +216,8 @@ function App() {
     if (!result.matches.length) {
       setSearchMatches([]);
       setCurrentMatchIndex(0);
-      addLog(`未找到可切换的 topMatches: "${searchText}"`);
-      return;
+      addLog(`未找到可切换的 topMatches: "${keyword}"`);
+      return false;
     }
 
     setSearchMatches(result.matches);
@@ -223,6 +225,7 @@ function App() {
     if (!(options?.silentWhenFirst && result.nextIndex === 0 && options?.forceSelectFirst)) {
       addLog(`已定位 topMatches: ${result.nextIndex + 1}/${result.matches.length}`);
     }
+    return true;
   };
 
   // 工具方法示例
@@ -247,22 +250,29 @@ function App() {
 
     try {
       const { hasSelection } = await getSelectionState(appRef.current);
-      if (!hasSelection && searchText.trim()) {
+      if (!hasSelection && formatSearchTextForDocMatch(searchText)) {
         // 有搜索结果时，选中当前 currentMatchIndex 对应的项（用户可能已通过上/下一个切到第三项）
         // 避免 forceSelectFirst 导致始终选中第一项
         if (searchMatches.length > 0 && currentMatchIndex >= 0 && currentMatchIndex < searchMatches.length) {
           await selectMatchRange(appRef.current, searchMatches[currentMatchIndex]);
         } else {
-          await handleNavigateMatch("next", { forceSelectFirst: true, silentWhenFirst: true });
+          const selected = await handleNavigateMatch("next", {
+            forceSelectFirst: true,
+            silentWhenFirst: true,
+          });
+          if (!selected) {
+            return;
+          }
         }
       }
       const countBefore = await getRevisionCount(appRef.current);
+      const normalizedInsertText = formatSearchTextForDocMatch(insertText);
       await handleInsertText(appRef.current, {
         text: undefined, // searchText为输入的原文，没有则 undefined
-        insert: insertText,
+        insert: normalizedInsertText,
       });
 
-      addLog(`成功插入文本: "${insertText}"`);
+      addLog(`成功插入文本: "${normalizedInsertText}"`);
       setTimeout(async () => {
         revisionDatesToCancel.current = await collectNewRevisionDatesAfter(
           appRef.current!,
@@ -646,14 +656,14 @@ function App() {
                 <button onClick={handleInsert}>{t('insertButton')}</button>
                 <button
                   onClick={() => handleNavigateMatch("prev")}
-                  disabled={!searchText.trim()}
+                  disabled={!formatSearchTextForDocMatch(searchText)}
                   title={t('prevMatch')}
                 >
                   ↑
                 </button>
                 <button
                   onClick={() => handleNavigateMatch("next")}
-                  disabled={!searchText.trim()}
+                  disabled={!formatSearchTextForDocMatch(searchText)}
                   title={t('nextMatch')}
                 >
                   ↓

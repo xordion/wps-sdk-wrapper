@@ -1,4 +1,4 @@
-import { WpsApplication } from "@/interface";
+import type { WpsApplication } from "@/interface";
 import { searchAndLocateText } from "./search";
 import { highlightByRange } from "./highlight";
 
@@ -73,8 +73,7 @@ export const selectMatchRange = async (
   match: SearchMatchRange
 ): Promise<boolean> => {
   if (!app || !match) return false;
-  const wpsStart = await textPosToWpsPos(app, match.pos);
-  await highlightByRange(app, wpsStart, match.len);
+  await highlightByRange(app, match.pos, match.len);
   return true;
 };
 

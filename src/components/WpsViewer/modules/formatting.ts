@@ -44,3 +44,49 @@ export const formatDocumentFont = async (app: any, font: string) => {
   const revisions = await getRevisionByDate(app, date);
   await handleMatchingRevisions(revisions, "accept");
 };
+
+const SERIAL_PREFIX_PATTERNS: RegExp[] = [
+  /^[\t\u00A0\u2000-\u200B\uFEFF]+/u,
+  /^\d{1,4}(?:[\.．]\d{1,4}){0,3}[\.\u3001\uFF0E)）:：．]\s*/u,
+  /^[\uFF10-\uFF19]{1,4}(?:[\.．][\uFF10-\uFF19]{1,4}){0,3}[\.\u3001\uFF0E)）:：．]\s*/u,
+  /^[（(]\d{1,4}[)）]\s*/u,
+  /^[（(][\uFF10-\uFF19]{1,4}[)）]\s*/u,
+  /^[\u2460-\u2473]\s*/u,
+  /^[\u24EA]\s*/u,
+  /^[\u2474-\u2487]\s*/u,
+  /^第[0-9一二三四五六七八九十百千万〇两零\d]+[条款項章节節]\s*/u,
+  /^[a-zA-Z][\.\)、．]\s*/u,
+];
+
+const stripLeadingSerialsOneLine = (line: string): string => {
+  let text = line;
+  for (let index = 0; index < 16; index += 1) {
+    text = text.replace(/^\s+/, "");
+    let matched = false;
+    for (const pattern of SERIAL_PREFIX_PATTERNS) {
+      const next = text.replace(pattern, "");
+      if (next !== text) {
+        text = next;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      break;
+    }
+  }
+  return text;
+};
+
+/**
+ * Normalize copied clause text before search/insert so line-leading serial markers
+ * do not affect WPS document matching.
+ */
+export const formatSearchTextForDocMatch = (input: string): string => {
+  if (!input) return input;
+  return input
+    .split(/\r?\n/)
+    .map((line) => stripLeadingSerialsOneLine(line))
+    .join("\n")
+    .trim();
+};

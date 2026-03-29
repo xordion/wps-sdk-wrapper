@@ -1,4 +1,4 @@
-import { Wps } from '@/interface';
+import type { Wps } from '@/interface';
 
 interface RevisionInfo {
   index: number;

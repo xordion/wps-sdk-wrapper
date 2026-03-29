@@ -1,4 +1,4 @@
-import { Wps } from '@/interface';
+import type { Wps } from '@/interface';
 import { highlightByRange } from './highlight';
 import type { RevisionInfo } from './common';
 import {
