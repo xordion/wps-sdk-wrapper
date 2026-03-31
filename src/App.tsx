@@ -18,7 +18,7 @@ import {
   collectRevisionInfos,
   collectNewRevisionDatesAfter,
   cancelRevisions,
-  getRevisionCount,
+  getLatestRevisionDate,
   formatSearchTextForDocMatch,
   // }from 'wps-sdk-wrapper';
 } from "wps-component";
@@ -265,7 +265,7 @@ function App() {
           }
         }
       }
-      const countBefore = await getRevisionCount(appRef.current);
+      const latestBefore = await getLatestRevisionDate(appRef.current);
       const normalizedInsertText = formatSearchTextForDocMatch(insertText);
       await handleInsertText(appRef.current, {
         text: undefined, // searchText为输入的原文，没有则 undefined
@@ -276,9 +276,9 @@ function App() {
       setTimeout(async () => {
         revisionDatesToCancel.current = await collectNewRevisionDatesAfter(
           appRef.current!,
-          countBefore
+          latestBefore
         );
-      }, 1000);
+      }, 3000);
     } catch (error: any) {
       addLog(`插入文本出错: ${error.message}`);
     }

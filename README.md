@@ -178,10 +178,12 @@ Deprecated (not recommended):
 Recommended:
 
 - `collectRevisionInfos(revisions)`
+- `collectRevisionDates(revisions)`
 - `getLatestRevisionDate(app)`
 - `getRevisionCount(app)`
+- `getRevisionsAfterDate(app, latestBefore?)`
 - `handleRevisionContent(app, date, isReject?)`
-- `collectNewRevisionDatesAfter(app, countBefore)`
+- `collectNewRevisionDatesAfter(app, latestBefore?)`
 - `cancelRevisions(app, dates)`
 - `toggleRevisionHandler(app, isShow)`
 

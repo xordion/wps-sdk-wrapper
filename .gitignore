@@ -6,3 +6,4 @@ node_modules
 .DS_Store
 /docs
 .tmp-tests
+example-dist

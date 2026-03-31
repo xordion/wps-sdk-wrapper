@@ -25,21 +25,43 @@ export const getRevisionCount = async (app: Wps): Promise<number> => {
   }
 };
 
-/** 获取索引大于 startIndex 的修订（用于撤销「本次替换」产生的全部修订：删除+新增） */
-export const getRevisionsAfterIndex = async (
+const compareRevisionDates = (left: string, right: string): number => {
+  const leftTime = Date.parse(left);
+  const rightTime = Date.parse(right);
+  const leftValid = Number.isFinite(leftTime);
+  const rightValid = Number.isFinite(rightTime);
+
+  if (leftValid && rightValid && leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  return right.localeCompare(left);
+};
+
+/** 获取日期晚于 latestBefore 的修订；未传日期则返回全部修订 */
+export const getRevisionsAfterDate = async (
   app: Wps,
-  startIndex: number
+  latestBefore?: string
 ): Promise<RevisionInfo[]> => {
   try {
     const revisions = await app?.ActiveDocument?.Revisions;
     const revisionInfos = await collectRevisionInfos(revisions);
     return revisionInfos
-      .filter((info) => info.index > startIndex)
-      .sort((a, b) => b.index - a.index);
+      .filter((info) => !latestBefore || compareRevisionDates(info.date, latestBefore) < 0)
+      .sort((left, right) => {
+        const dateCompare = compareRevisionDates(left.date, right.date);
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        return right.index - left.index;
+      });
   } catch {
     return [];
   }
 };
+
+export const collectRevisionDates = (revisions: RevisionInfo[]): string[] =>
+  [...new Set(revisions.map((revision) => revision.date).filter(Boolean))];
 
 export const getLatestRevisionDate = async (app: Wps): Promise<string> => {
   try {

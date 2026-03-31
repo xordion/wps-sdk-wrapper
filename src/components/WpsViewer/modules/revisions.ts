@@ -2,19 +2,21 @@ import type { Wps } from '@/interface';
 import { highlightByRange } from './highlight';
 import type { RevisionInfo } from './common';
 import {
+  collectRevisionDates,
   delay,
   getLatestRevisionDate,
   getRevisionByDate,
-  getRevisionsAfterIndex,
+  getRevisionsAfterDate,
 } from './common';
 
 // 重新导出 common 中的内容，保持向后兼容
 export type { RevisionInfo } from './common';
 export {
+  collectRevisionDates,
   delay,
   getLatestRevisionDate,
   getRevisionByDate,
-  getRevisionsAfterIndex,
+  getRevisionsAfterDate,
   collectRevisionInfos,
 } from './common';
 
@@ -66,10 +68,10 @@ export const handleRevisionContent = async (
  */
 export const collectNewRevisionDatesAfter = async (
   app: Wps,
-  countBefore: number
+  latestBefore?: string
 ): Promise<string[]> => {
-  const newRevisions = await getRevisionsAfterIndex(app, countBefore);
-  return [...new Set(newRevisions.map((r) => r.date).filter(Boolean))];
+  const newRevisions = await getRevisionsAfterDate(app, latestBefore);
+  return collectRevisionDates(newRevisions);
 };
 
 /**
